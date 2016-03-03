@@ -1,0 +1,62 @@
+Here I would be describing how to use the 'PiCamera' on Raspberry Pi 2 Model B,
+that is running UBUNTU Trusty 14.04. 
+
+------------------PART 1 : Installing the PiCamera Module ----------------------------
+
+First to start we should note that since the raspberry pi is running UBUNTU,
+raspi-config is an invalid command. Thus we need some additional libraries.
+
+For that we need to include the raspberrypi/userland repository from GitHub.
+It is the source code for ARM side libraries for interfacing to Raspberry Pi GPU.
+This repository contains the source code for the ARM side libraries used on Raspberry Pi. 
+These typically are installed in /opt/vc/lib and includes source for the ARM side code to 
+interface to: EGL, mmal, GLESv2, vcos, openmaxil, vchiq_arm, bcm_host, WFC, OpenVG.
+
+Following are the steps to use the repository.
+1. get source code (zip file)  here : https://github.com/raspberrypi/userland
+
+2. Unzip the file and copy the directory under /opt/vc.
+(you can copy the entire directory using cp -r * /opt/vc/)
+
+3. go to opt/vc and type : sed -i 's/if (DEFINED CMAKE_TOOLCHAIN_FILE)/if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)/g' makefiles/cmake/arm-linux.cmake
+
+4. create a build directory and compile (it takes a while) 
+ (then follow the steps one at a time)
+	sudo mkdir build
+	cd build
+	sudo cmake -DCMAKE_BUILD_TYPE=Release ..
+	sudo make
+	sudo make install
+
+After doing this you could find the binaries inside /opt/vc/bin
+
+Just run <raspistill -o output.jpg> to test whether the PiCamera is up and running.
+
+So now your system is ready to include OpenCV Calls
+
+
+------------PART 2 : Using OpenCv and Python to use the PiCamera Module------------
+
+INSTALLING PICAMERA
+
+So at this point we know that our Raspberry Pi camera is working properly. 
+But how do we interface with the Raspberry Pi camera module using Python?
+
+The answer is the picamera module.
+
+pip install "picamera[array]"
+
+IMPORTANT: Notice how I specified picamera[array]  and not just picamera.
+
+While the standard picamera  module provides methods to interface with the camera, we need the (optional) array  sub-module so that we can utilize OpenCV. Remember, when using Python bindings, OpenCV represents images as NumPy arrays -- and the array  sub-module allows us to obtain NumPy arrays from the Raspberry Pi camera module.
+
+"Accessing a single image of your Raspberry Pi using Python and OpenCV."
+
+see the code in "first_test.py"
+
+we initialize our PiCamera object on Line 8 and grab a reference to the raw capture component on Line 9. This rawCapture  object is especially useful since it (1) gives us direct access to the camera stream and (2) avoids the expensive compression to JPEG format, which we would then have to take and decode to OpenCV format anyway. I highly recommend that you use PiRGBArray  whenever you need to access the Raspberry Pi camera -- the performance gains are well worth it.
+
+From there, we sleep for a tenth of a second on Line 12 -- this allows the camera sensor to warm up.
+
+Finally, we grab the actual photo from the rawCapture  object on Line 15 where we take special care to ensure our image is in BGR format rather than RGB. OpenCV represents images as NumPy arrays in BGR order rather than RGB -- this little nuisance is subtle, but very important to remember as it can lead to some confusing bugs in your code down the line.
+
